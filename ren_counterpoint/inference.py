@@ -1,6 +1,7 @@
 from .neural_model import PolyphonyTransformer
 from .neurosymbolic_model import NeurosymbolicModel
 from .tokenizer import RemiPlusTokenizer
+import torch
 import os
 
 def load_neurosymbolic_model(checkpoint_dir, tokenizer, checkpoint_name: str = 'best_model.pt', device='cuda'):
