@@ -1,5 +1,5 @@
 from .neural_model import PolyphonyTransformer
-from .neurosymbolic_model import Neurosymbolic Model
+from .neurosymbolic_model import NeurosymbolicModel
 from .tokenizer import RemiPlusTokenizer
 import os
 
