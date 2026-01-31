@@ -83,13 +83,7 @@ def tokenize_single_file(path: str, tokenizer_path: str) -> dict:
     This function is designed to be called in parallel.
     It loads the tokenizer fresh in each process to avoid pickling issues.
     """
-    # # Import here to avoid issues with multiprocessing
-    # from miditok import REMI
-    # from symusic import Score
-
     try:
-        # Load tokenizer (cached per-process by Python)
-        # tokenizer = REMI(params=Path(tokenizer_path))
         tokenizer = RemiPlusTokenizer(load_path=tokenizer_path)
         vocab_size = len(tokenizer.tokenizer)
 
