@@ -3,8 +3,9 @@ from .neurosymbolic_model import NeurosymbolicModel
 from .tokenizer import RemiPlusTokenizer
 import torch
 import os
+from pathlib import Path
 
-def load_neurosymbolic_model(checkpoint_dir, tokenizer, checkpoint_name: str = 'best_model.pt', device='cuda'):
+def load_neurosymbolic_model(checkpoint_dir: str | Path, tokenizer: RemiPlusTokenizer, checkpoint_name: str = 'best_model.pt', device='cuda'):
     path = os.path.join(checkpoint_dir, checkpoint_name)
 
     if not os.path.exists(path):

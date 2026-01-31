@@ -1,6 +1,7 @@
 from pathlib import Path
 from miditok import REMI, TokenizerConfig
 from symusic import Score
+import mido
 
 class RemiPlusTokenizer:
     """
