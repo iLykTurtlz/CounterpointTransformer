@@ -4,6 +4,7 @@ from datasets import Dataset as HFDataset
 import multiprocessing
 from functools import partial
 from tqdm.auto import tqdm
+from pathlib import Path
 
 class PolyphonyTorchDataset(TorchDataset):
     """
