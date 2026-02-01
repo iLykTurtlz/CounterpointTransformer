@@ -3,6 +3,7 @@ from torch.utils.data import Dataset as TorchDataset
 from datasets import Dataset as HFDataset
 import multiprocessing
 from functools import partial
+from tqdm.auto import tqdm
 
 class PolyphonyTorchDataset(TorchDataset):
     """
