@@ -1,6 +1,7 @@
 import mido
 from pathlib import Path
 import multiprocessing
+from functools import partial
 
 def transpose_midi(midi_file: mido.MidiFile, semitones: int) -> mido.MidiFile:
     """
