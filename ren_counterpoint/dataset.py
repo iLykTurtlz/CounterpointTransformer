@@ -2,6 +2,7 @@ import torch
 from torch.utils.data import Dataset as TorchDataset
 from datasets import Dataset as HFDataset
 import multiprocessing
+from functools import partial
 
 class PolyphonyTorchDataset(TorchDataset):
     """
