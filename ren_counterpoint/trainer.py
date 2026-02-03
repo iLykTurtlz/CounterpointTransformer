@@ -1,9 +1,17 @@
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+from torch.optim import AdamW
 from .dataset import PolyphonyTorchDataset
 from .neural_model import PolyphonyTransformer
+import multiprocessing
 import gc
-import tqdm
+from tqdm.auto import tqdm
+import json
+import os
+import time
+
 
 def collate_fn(batch):
     """Collate function for DataLoader."""
@@ -35,6 +43,7 @@ class Trainer:
         device: str | None = None,
         # Scheduler settings
         restart_period_epochs: int = 10,  # Restart LR every 10 epochs
+        num_workers: int = None,
     ):
         self.model = model
         self.train_dataset = train_dataset
@@ -77,15 +86,18 @@ class Trainer:
         print(f"Using device: {self.device}")
 
         # Setup loaders
+        if num_workers is None:
+            num_workers = multiprocessing.cpu_count()
+
         self.train_loader = DataLoader(
             train_dataset, batch_size=batch_size, shuffle=True,
-            collate_fn=collate_fn, num_workers=2, pin_memory=True
+            collate_fn=collate_fn, num_workers=num_workers, pin_memory=True
         )
 
         if val_dataset:
             self.val_loader = DataLoader(
                 val_dataset, batch_size=batch_size, shuffle=False,
-                collate_fn=collate_fn, num_workers=2, pin_memory=True
+                collate_fn=collate_fn, num_workers=num_workers, pin_memory=True
             )
         else:
             self.val_loader = None
