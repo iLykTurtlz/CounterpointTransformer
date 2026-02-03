@@ -6,7 +6,7 @@ import multiprocessing
 from functools import partial
 from tqdm.auto import tqdm
 from pathlib import Path
-
+import random
 
 
 class PolyphonyTorchDataset(TorchDataset):
