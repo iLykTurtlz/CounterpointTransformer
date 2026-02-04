@@ -5,7 +5,12 @@ import torch
 import os
 from pathlib import Path
 
-def load_neurosymbolic_model(checkpoint_dir: str | Path, tokenizer: RemiPlusTokenizer, checkpoint_name: str = 'best_model.pt', device='cuda'):
+def load_neurosymbolic_model(
+    checkpoint_dir: str | Path, 
+    tokenizer: RemiPlusTokenizer, 
+    checkpoint_name: str = 'best_model.pt', 
+    device='cuda'
+) -> NeurosymbolicModel:
     path = os.path.join(checkpoint_dir, checkpoint_name)
 
     if not os.path.exists(path):
@@ -15,16 +20,13 @@ def load_neurosymbolic_model(checkpoint_dir: str | Path, tokenizer: RemiPlusToke
 
     if 'model_config' in checkpoint:
         config = checkpoint['model_config']
-    elif 'config' in checkpoint:
-        config = checkpoint['config']
-    elif 'args' in checkpoint:
-        config = checkpoint['args']
     else:
         raise KeyError(f"Could not find configuration in {path}. Keys found: {checkpoint.keys()}")
 
     try:
         raw_model = PolyphonyTransformer(**config)
     except TypeError as e:
+        # Possible fallback in case a later model has additional config params
         import inspect
         valid_args = inspect.signature(PolyphonyTransformer.__init__).parameters
         filtered_config = {k: v for k, v in config.items() if k in valid_args and k != 'self'}
@@ -34,23 +36,25 @@ def load_neurosymbolic_model(checkpoint_dir: str | Path, tokenizer: RemiPlusToke
 
     raw_model.to(device)
     raw_model.eval()
-
+  
     print(f"Loaded model from {path}")
     return NeurosymbolicModel(raw_model, tokenizer)
 
-
-
 def generate_sequence(
-    model: NeurosymbolicModel,
+    model: NeurosymbolicModel | PolyphonyTransformer,
     bos_id: int,
     eos_id: int,
-    max_length: int = 512,
+    max_length: int = 4096,
     temperature: float = 1.0,
     top_k: int = 50,
     top_p: float = 0.95,
-    device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
+    device: str = 'cuda',
+    start_tokens: torch.Tensor | None = None
 ):
-    """Generate a sequence using the Neurosymbolic wrapper."""
+    """
+    Generate a sequence using either a neural model (Polyphony
+    Transformer) or the full neurosymbolic model.
+    """
 
     # Note: We do NOT call model.to(device) here because NeurosymbolicModel
     # is a wrapper, not an nn.Module. The internal model should already be
@@ -63,11 +67,10 @@ def generate_sequence(
     print(f"  Top-p: {top_p}")
     print(f"  Device: {device}")
 
-    # Start with BOS token
-    start_tokens = torch.tensor([[bos_id]], dtype=torch.long, device=device)
+    if start_tokens is None:
+        # Start with BOS token
+        start_tokens = torch.tensor([[bos_id]], dtype=torch.long, device=device)
 
-    # We don't strictly need 'with torch.no_grad()' here because
-    # your generate method has the decorator, but it's good practice.
     generated = model.generate(
         start_tokens=start_tokens,
         max_length=max_length,
