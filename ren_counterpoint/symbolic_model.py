@@ -69,9 +69,12 @@ class VoiceState:
                 self.previous_note.start_position -= new_bar_start_position
                 self.previous_note.end_position -= new_bar_start_position
         else:
-            # Note finished in previous bar
+            # Note finished in previous bar (or right at the bar line)
+            # Keep it as previous_note, and adjust its coordinates
+            self.previous_note = self.current_note
+            self.previous_note.start_position -= new_bar_start_position
+            self.previous_note.end_position -= new_bar_start_position
             self.current_note = None
-            self.previous_note = None
 
 class REMIState:
     def __init__(self, max_nb_voices=12):
@@ -528,6 +531,8 @@ class CounterpointSolver:
                 continue
 
             other_prev, other_curr = other_change
+            if other_prev == other_curr:
+                continue
 
             if (this_curr.pitch - other_prev.pitch) % 12 == 7:
                 constraints.append((pitch - other_curr.pitch) % 12 == 7)
@@ -564,6 +569,8 @@ class CounterpointSolver:
                 continue
 
             other_prev, other_curr = other_change
+            if other_prev == other_curr:
+                continue
 
             if (this_curr.pitch - other_prev.pitch) % 12 != 0:
                 continue
