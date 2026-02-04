@@ -67,7 +67,7 @@ class VoiceState:
             self.current_note.end_position -= new_bar_start_position
             if self.previous_note is not None:
                 self.previous_note.start_position -= new_bar_start_position
-              self.previous_note.end_position -= new_bar_start_position
+                self.previous_note.end_position -= new_bar_start_position
         else:
             # Note finished in previous bar
             self.current_note = None
