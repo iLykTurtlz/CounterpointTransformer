@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+from tqdm.auto import tqdm
 
 class PositionalEncoding(nn.Module):
     """Sinusoidal positional encoding for transformer."""
@@ -201,7 +202,7 @@ class PolyphonyTransformer(nn.Module):
         device = start_tokens.device
         generated = start_tokens.clone()
 
-        for _ in range(max_length - start_tokens.size(1)):
+        for _ in tqdm(range(max_length - start_tokens.size(1))):
             # Get logits for last position
             logits = self(generated)[:, -1, :] / temperature
 

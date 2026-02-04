@@ -46,7 +46,7 @@ def generate_sequence(
     eos_id: int,
     max_length: int = 4096,
     temperature: float = 1.0,
-    top_k: int = 50,
+    top_k: int = 10,
     top_p: float = 0.95,
     device: str = 'cuda',
     start_tokens: torch.Tensor | None = None

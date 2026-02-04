@@ -31,29 +31,28 @@ class VoiceState:
         """Start a new note"""
         if self.current_note is not None and \
            self.current_note.end_position == position:
-          self.previous_note = self.current_note
+            self.previous_note = self.current_note
         else:
-          self.previous_note = None
+            self.previous_note = None
 
         self.current_note = NoteEvent(
-          pitch=pitch,
-          start_position=position,
-          end_position=position + duration
-        )
+                pitch=pitch,
+                start_position=position,
+                end_position=position + duration)
 
     def get_pitch_change_position(self) -> Optional[int]:
-      """
-      Get the position where the pitch last changed (i.e. where current_note started)
-      Returns None if there's no current note or no previous note
-      """
-      if self.current_note is None or self.previous_note is None:
-        return None
-      return self.current_note.start_position
+        """
+        Get the position where the pitch last changed (i.e. where current_note started)
+        Returns None if there's no current note or no previous note
+        """
+        if self.current_note is None or self.previous_note is None:
+            return None
+        return self.current_note.start_position
 
     def get_pitch_change(self) -> Optional[Tuple[int, int]]:
-      if self.current_note is None or self.previous_note is None:
-        return None
-      return (self.previous_note, self.current_note)
+        if self.current_note is None or self.previous_note is None:
+            return None
+        return (self.previous_note, self.current_note)
 
     def advance_to_bar(self, new_bar_start_position: int):
         """Called when we cross a bar line"""
@@ -67,7 +66,7 @@ class VoiceState:
             self.current_note.start_position -= new_bar_start_position
             self.current_note.end_position -= new_bar_start_position
             if self.previous_note is not None:
-              self.previous_note.start_position -= new_bar_start_position
+                self.previous_note.start_position -= new_bar_start_position
               self.previous_note.end_position -= new_bar_start_position
         else:
             # Note finished in previous bar
@@ -186,8 +185,7 @@ class REMIState:
             self.voices[self.pending_program].start_note(
                 pitch=self.pending_pitch,
                 position=self.current_position,
-                duration=duration_ticks
-            )
+                duration=duration_ticks)
 
             # For setting empty bar flag -----
             self.notes_in_current_bar += 1
@@ -198,9 +196,9 @@ class REMIState:
             self.last_token_type = 'Duration'
 
         elif token_type == 'EOS':
-          if self.last_token_type == 'TimeSig' and self.notes_in_current_bar == 0:
-            self.found_empty_bar = True
-          self.last_token_type = 'EOS'
+            if self.last_token_type == 'TimeSig' and self.notes_in_current_bar == 0:
+                self.found_empty_bar = True
+            self.last_token_type = 'EOS'
 
     def can_play(self, voice_id: int) -> bool:
         """
@@ -214,40 +212,40 @@ class REMIState:
 
 @dataclass
 class TokenRange:
-  """Represents a contiguous range of token IDs [start, end["""
-  start: int
-  end: int
-  name: str
+    """Represents a contiguous range of token IDs [start, end["""
+    start: int
+    end: int
+    name: str
 
-  def __contains__(self, token_id: int) -> bool:
-    return self.start <= token_id < self.end
+    def __contains__(self, token_id: int) -> bool:
+        return self.start <= token_id < self.end
 
-  def to_tuple(self) -> Tuple[int, int]:
-    """Return (start, end) for Z3 integration"""
-    return (self.start, self.end)
+    def to_tuple(self) -> Tuple[int, int]:
+        """Return (start, end) for Z3 integration"""
+        return (self.start, self.end)
 
-  def size(self) -> int:
-    return self.end - self.start
+    def size(self) -> int:
+        return self.end - self.start
 
-  def has_member(self, x: z3.z3.ArithRef) -> z3.z3.BoolRef:
-    """Enforce that x is in the token range"""
-    return self.start <= x < self.end
+    def has_member(self, x: z3.z3.ArithRef) -> z3.z3.BoolRef:
+        """Enforce that x is in the token range"""
+        return self.start <= x < self.end
 
 @dataclass
 class TokenSet:
-  """Represents a possibly noncontiguous range of token IDs"""
-  ids: set
-  name: str
+    """Represents a possibly noncontiguous range of token IDs"""
+    ids: set
+    name: str
 
-  def __contains__(self, token_id: int) -> bool:
-    return token_id in self.ids
+    def __contains__(self, token_id: int) -> bool:
+        return token_id in self.ids
 
-  def size(self) -> int:
-    return len(self.ids)
+    def size(self) -> int:
+        return len(self.ids)
 
-  def has_member(self, x: z3.z3.ArithRef) -> z3.z3.BoolRef:
-    """Enforce that x is a member of the set of ids"""
-    return Or(*(x == id for id in self.ids))
+    def has_member(self, x: z3.z3.ArithRef) -> z3.z3.BoolRef:
+        """Enforce that x is a member of the set of ids"""
+        return Or(*(x == id for id in self.ids))
 
 @dataclass
 class VocabDomains:
@@ -265,43 +263,42 @@ class VocabDomains:
 
     @classmethod
     def from_vocab(cls, name_to_id: Dict[str, int], id_to_name: Dict[int, str]):
-      """
-      Build token singleton ids, sets, and ranges from vocab
-      """
-      def find_range(prefix: str) -> TokenRange:
-        """Find contiguous range for a token type"""
-        matching = [
+        """
+        Build token singleton ids, sets, and ranges from vocab
+        """
+        def find_range(prefix: str) -> TokenRange:
+            """Find contiguous range for a token type"""
+            matching = [
+                tid for tid, name in id_to_name.items()
+                if name.startswith(prefix)]
+            return TokenRange(min(matching), max(matching)+1, prefix.strip('_'))
+
+        # Valid time signatures only
+        valid_timesigs = {'3/8', '6/4', '3/4', '2/4', '4/4'}
+        timesig_set = TokenSet(
+            {name_to_id['TimeSig_'+sig] for sig in valid_timesigs}, 'TimeSig'
+        )
+        # Positions 0-143 only (6/4 is max: 6 beats * 24 ticks)
+        position_ids = [
             tid for tid, name in id_to_name.items()
-            if name.startswith(prefix)
+            if name.startswith('Position_') and 0 <= int(name.split('_')[1]) < 144
         ]
-        return TokenRange(min(matching), max(matching)+1, prefix.strip('_'))
+        position_range = TokenRange(
+            min(position_ids), max(position_ids)+1, 'Position'
+        )
 
-      # Valid time signatures only
-      valid_timesigs = {'3/8', '6/4', '3/4', '2/4', '4/4'}
-      timesig_set = TokenSet(
-          {name_to_id['TimeSig_'+sig] for sig in valid_timesigs}, 'TimeSig'
-      )
-      # Positions 0-143 only (6/4 is max: 6 beats * 24 ticks)
-      position_ids = [
-          tid for tid, name in id_to_name.items()
-          if name.startswith('Position_') and 0 <= int(name.split('_')[1]) < 144
-      ]
-      position_range = TokenRange(
-          min(position_ids), max(position_ids)+1, 'Position'
-      )
-
-      return cls(
-        BOS=TokenSet({name_to_id['BOS_None']}, 'BOS_None'),
-        EOS=TokenSet({name_to_id['EOS_None']}, 'EOS_None'),
-        PAD=TokenSet({name_to_id['PAD_None']}, 'PAD_None'),
-        Bar=TokenSet({name_to_id['Bar_None']}, 'Bar_None'),
-        TimeSig=timesig_set,
-        Position=position_range,
-        Program=find_range('Program_'),
-        Pitch=find_range('Pitch_'),
-        Duration=find_range('Duration_'),
-        PitchDrum=find_range('PitchDrum_'),
-      )
+        return cls(
+            BOS=TokenSet({name_to_id['BOS_None']}, 'BOS_None'),
+            EOS=TokenSet({name_to_id['EOS_None']}, 'EOS_None'),
+            PAD=TokenSet({name_to_id['PAD_None']}, 'PAD_None'),
+            Bar=TokenSet({name_to_id['Bar_None']}, 'Bar_None'),
+            TimeSig=timesig_set,
+            Position=position_range,
+            Program=find_range('Program_'),
+            Pitch=find_range('Pitch_'),
+            Duration=find_range('Duration_'),
+            PitchDrum=find_range('PitchDrum_'),
+        )
 
 
 
@@ -311,122 +308,122 @@ class REMIConstraints:
     Returns valid token domains that can be used for masking or Z3 solving
     """
     GRAMMAR = {
-      None: ['BOS'],
-      'BOS': ['Bar'],
-      'Bar': ['TimeSig'],
-      'TimeSig': ['Position', 'Bar', 'EOS'],  # Position | empty bar | end
-      'Position': ['Program'],
-      'Program': ['Pitch'],
-      'Pitch': ['Duration'],
-      'Duration': ['Program', 'Position', 'Bar', 'EOS'],
+        None: ['BOS'],
+        'BOS': ['Bar'],
+        'Bar': ['TimeSig'],
+        'TimeSig': ['Position', 'Bar', 'EOS'],  # Position | empty bar | end
+        'Position': ['Program'],
+        'Program': ['Pitch'],
+        'Pitch': ['Duration'],
+        'Duration': ['Program', 'Position', 'Bar', 'EOS'],
     }
 
     def __init__(self, name_to_id: Dict[str, int], id_to_name: Dict[int, str]):
-      self.vocab_size = len(id_to_name)
-      self.id_to_name = id_to_name
-      self.name_to_id = name_to_id
-      self.domains = VocabDomains.from_vocab(self.name_to_id, self.id_to_name)
+        self.vocab_size = len(id_to_name)
+        self.id_to_name = id_to_name
+        self.name_to_id = name_to_id
+        self.domains = VocabDomains.from_vocab(self.name_to_id, self.id_to_name)
 
     def get_valid_domains(self, state) -> List[TokenRange | TokenSet]:
-      """
-      Get valid token ranges based on grammar and basic semantic constraints
-      Returns list of TokenRange objects that can be:
-      1. Directly used to create masks
-      2. Passed to Z3 solver for further constraint solving
-      """
-      # Get grammar-allowed types
-      allowed_types = self.GRAMMAR.get(state.last_token_type, [])
+        """
+        Get valid token ranges based on grammar and basic semantic constraints
+        Returns list of TokenRange objects that can be:
+        1. Directly used to create masks
+        2. Passed to Z3 solver for further constraint solving
+        """
+        # Get grammar-allowed types
+        allowed_types = self.GRAMMAR.get(state.last_token_type, [])
 
-      valid = []
-      for token_type in allowed_types:
-        domain = getattr(self.domains, token_type)
+        valid = []
+        for token_type in allowed_types:
+            domain = getattr(self.domains, token_type)
 
-        # Apply semantic filtering to potentially narrow the domains
-        filtered_domains = self._filter_semantic(token_type, domain, state)
-        valid.extend(filtered_domains)
+            # Apply semantic filtering to potentially narrow the domains
+            filtered_domains = self._filter_semantic(token_type, domain, state)
+            valid.extend(filtered_domains)
 
-      return valid
+        return valid
 
     def _filter_semantic(
-      self,
-      token_type: str,
-      domain: TokenRange | TokenSet,
-      state: REMIState
+        self,
+        token_type: str,
+        domain: TokenRange | TokenSet,
+        state: REMIState
     ) -> List[TokenRange | TokenSet]:
-      """
-      Invoke a method to constrain token domains, if applicable
-      Returns list of domains (to support TokenRange split into multiple subranges)
-      """
-      if token_type == 'Position':
-          return self._filter_position_range(domain, state)
-      elif token_type == 'Program':
-          return self._filter_program_range(domain, state)
-      else:
-          # No filtering needed - return full range
-          return [domain]
+        """
+        Invoke a method to constrain token domains, if applicable
+        Returns list of domains (to support TokenRange split into multiple subranges)
+        """
+        if token_type == 'Position':
+            return self._filter_position_range(domain, state)
+        elif token_type == 'Program':
+            return self._filter_program_range(domain, state)
+        else:
+            # No filtering needed - return full range
+            return [domain]
 
     def _filter_position_range(
-      self,
-      domain: TokenRange,
-      state: REMIState
+        self,
+        domain: TokenRange,
+        state: REMIState
     ) -> List[TokenRange | TokenSet]:
-      """
-      Filter position range by:
-      1. Bar length (max position depends on time signature)
-      2. Monotonicity (must be > current_position)
-      """
-      assert state.current_time_sig is not None, f"Position without time sig: {state}"
+        """
+        Filter position range by:
+        1. Bar length (max position depends on time signature)
+        2. Monotonicity (must be > current_position)
+        """
+        assert state.current_time_sig is not None, f"Position without time sig: {state}"
 
-      if state.last_token_type == "TimeSig":
-          # After TimeSig, before first position - any position OK
-          return [domain]
+        if state.last_token_type == "TimeSig":
+            # After TimeSig, before first position - any position OK
+            return [domain]
 
-      max_pos = state.bar_length_ticks - 1
-      current = state.current_position if state.current_position is not None else -1 # example: right after TimeSig
+        max_pos = state.bar_length_ticks - 1
+        current = state.current_position if state.current_position is not None else -1 # example: right after TimeSig
 
-      # New position must be: current < pos <= max_pos
-      min_valid_pos = current + 1
-      max_valid_pos = max_pos
+        # New position must be: current < pos <= max_pos
+        min_valid_pos = current + 1
+        max_valid_pos = max_pos
 
-      if min_valid_pos > max_valid_pos:
-          # No valid positions (bar is full)
-          return []
+        if min_valid_pos > max_valid_pos:
+            # No valid positions (bar is full)
+            return []
 
-      # Convert position values to token IDs
-      # Position_N maps to token ID = position_range.start + N
-      min_token_id = domain.start + min_valid_pos
-      max_token_id = domain.start + max_valid_pos
+        # Convert position values to token IDs
+        # Position_N maps to token ID = position_range.start + N
+        min_token_id = domain.start + min_valid_pos
+        max_token_id = domain.start + max_valid_pos
 
-      # # Clamp to actual range bounds - should NOT be necessary
-      # min_token_id = max(min_token_id, position_range.start)
-      # max_token_id = min(max_token_id, position_range.end)
-      assert min_token_id >= domain.start, \
-              f"min_token_id, {min_token_id}, too small for range {domain}"
-      assert max_token_id <= domain.end, \
-              f"max_token_id, {max_token_id}, too large for range {domain}"
+        # # Clamp to actual range bounds - should NOT be necessary
+        # min_token_id = max(min_token_id, position_range.start)
+        # max_token_id = min(max_token_id, position_range.end)
+        assert min_token_id >= domain.start, \
+            f"min_token_id, {min_token_id}, too small for range {domain}"
+        assert max_token_id <= domain.end, \
+            f"max_token_id, {max_token_id}, too large for range {domain}"
 
-      # if min_token_id > max_token_id:
-      #     return []
-      assert min_token_id <= max_token_id, \
-              f'''Given (min_valid_pos, max_valid_pos)=({min_valid_pos},{max_valid_pos}),
-                  (min_token_id, max_token_id)=({min_token_id},{max_token_id})
-                  should not be empty'''
+        # if min_token_id > max_token_id:
+        #     return []
+        assert min_token_id <= max_token_id, \
+                f'''Given (min_valid_pos, max_valid_pos)=({min_valid_pos},{max_valid_pos}),
+                    (min_token_id, max_token_id)=({min_token_id},{max_token_id})
+                    should not be empty'''
 
-      return [TokenRange(min_token_id, max_token_id + 1, 'Position')]
+        return [TokenRange(min_token_id, max_token_id + 1, 'Position')]
 
     def _filter_program_range(
-      self,
-      domain: TokenRange,
-      state
+        self,
+        domain: TokenRange,
+        state
     ) -> List[TokenSet]:
-      """
-      Filter program range by voice availability
-      """
-      assert state.current_position is not None, f"_filter_program_range requires a Position to have already been set"
-      available_voices = {domain.start + voice_id for voice_id in range(state.max_nb_voices) if state.can_play(voice_id)}
-      return [TokenSet(available_voices, 'Program')]
+        """
+        Filter program range by voice availability
+        """
+        assert state.current_position is not None, f"_filter_program_range requires a Position to have already been set"
+        available_voices = {domain.start + voice_id for voice_id in range(state.max_nb_voices) if state.can_play(voice_id)}
+        return [TokenSet(available_voices, 'Program')]
 
-    # def get_invalid_mask(self, state, z3_invalid_ids: Optional[List[int]] = None) -> np.ndarray:
+  # def get_invalid_mask(self, state, z3_invalid_ids: Optional[List[int]] = None) -> np.ndarray:
     #   """
     #   Create boolean mask: True for INVALID tokens
 
@@ -481,12 +478,12 @@ class REMIConstraints:
         valid = self.get_valid_domains(state)
         valid_ids = []
         for domain in valid:
-          if isinstance(domain, TokenRange):
-            valid_ids.extend(range(domain.start, domain.end))
-          elif isinstance(domain, TokenSet):
-            valid_ids.extend(domain.ids)
-          else:
-            raise ValueError(f"Unknown domain instance: {domain}")
+            if isinstance(domain, TokenRange):
+                valid_ids.extend(range(domain.start, domain.end))
+            elif isinstance(domain, TokenSet):
+                valid_ids.extend(domain.ids)
+            else:
+                raise ValueError(f"Unknown domain instance: {domain}")
 
         # There should NOT be any PitchDrum tokens!
         assert(not any(self.id_to_name[id].startswith("PitchDrum") for id in valid_ids))
@@ -494,157 +491,184 @@ class REMIConstraints:
         return valid_ids
 
 class CounterpointSolver:
-  """
-  Uses Z3 to solve for forbidden pitches
-  """
-  def __init__(self, name_to_id: Dict[str, int], id_to_name: Dict[int, str]):
-    self.name_to_id = name_to_id
-    self.id_to_name = id_to_name
+    """
+    Uses Z3 to solve for forbidden pitches
+    """
+    def __init__(self, name_to_id: Dict[str, int], id_to_name: Dict[int, str]):
+        self.name_to_id = name_to_id
+        self.id_to_name = id_to_name
 
-  def parallel_fifth(
-    self,
-    state: REMIState,
-    pitch_domain: TokenRange,
-    pitch: z3.z3.ArithRef) -> z3.z3.BoolRef:
+        
 
-    current_voice = state.pending_program
-    assert current_voice is not None, f"solver invoked with no pending program"
+    def parallel_fifth(
+        self,
+        state: REMIState,
+        pitch_domain: TokenRange,
+        pitch: z3.z3.ArithRef) -> z3.z3.BoolRef:
+        """Create constraints to solve for parallel fifths"""
 
-    this_curr = state.voices[current_voice].current_note
-    if this_curr is None:
-      return False
+        current_voice = state.pending_program
+        assert current_voice is not None, f"solver invoked with no pending program"
 
-    constraints = []
-    for other_voice_idx in range(state.max_nb_voices):
-      if other_voice_idx == current_voice:
-        continue
+        this_curr = state.voices[current_voice].current_note
+        if this_curr is None:
+            return False
 
-      other_voice = state.voices[other_voice_idx]
-      if other_voice.get_pitch_change_position() != state.current_position:
-        continue
+        constraints = []
+        for other_voice_idx in range(state.max_nb_voices):
+            if other_voice_idx == current_voice:
+                continue
 
-      other_change = other_voice.get_pitch_change()
-      if other_change is None:
-        continue
+            other_voice = state.voices[other_voice_idx]
+            if other_voice.get_pitch_change_position() != state.current_position:
+                continue
 
-      other_prev, other_curr = other_change
+            other_change = other_voice.get_pitch_change()
+            if other_change is None:
+                continue
 
-      if (this_curr.pitch - other_prev.pitch) % 12 == 7:
-        constraints.append((pitch - other_curr.pitch) % 12 == 7)
-      elif (other_prev.pitch - this_curr.pitch) % 12 == 7:
-        constraints.append((other_curr.pitch - pitch) % 12 == 7)
+            other_prev, other_curr = other_change
 
-    return Or(constraints) if constraints else False
+            if (this_curr.pitch - other_prev.pitch) % 12 == 7:
+                constraints.append((pitch - other_curr.pitch) % 12 == 7)
+            elif (other_prev.pitch - this_curr.pitch) % 12 == 7:
+                constraints.append((other_curr.pitch - pitch) % 12 == 7)
 
-  def parallel_octave(
-    self,
-    state: REMIState,
-    pitch_domain: TokenRange,
-    pitch: z3.z3.ArithRef
-  ) -> z3.z3.BoolRef:
-    current_voice = state.pending_program
-    assert current_voice is not None, f"solver invoked with no pending program"
+        return Or(constraints) if constraints else False
 
-    this_curr = state.voices[current_voice].current_note
-    if this_curr is None:
-      return False
+    def parallel_octave(
+        self,
+        state: REMIState,
+        pitch_domain: TokenRange,
+        pitch: z3.z3.ArithRef) -> z3.z3.BoolRef:
+        """Create constraints to solve for parallel octaves"""
 
-    constraints = []
-    for other_voice_idx in range(state.max_nb_voices):
-      if other_voice_idx == current_voice:
-        continue
+        current_voice = state.pending_program
+        assert current_voice is not None, f"solver invoked with no pending program"
 
-      other_voice = state.voices[other_voice_idx]
-      if other_voice.get_pitch_change_position() != state.current_position:
-        continue
+        this_curr = state.voices[current_voice].current_note
+        if this_curr is None:
+            return False
 
-      other_change = other_voice.get_pitch_change()
-      if other_change is None:
-        continue
+        constraints = []
+        for other_voice_idx in range(state.max_nb_voices):
+            if other_voice_idx == current_voice:
+                continue
 
-      other_prev, other_curr = other_change
+            other_voice = state.voices[other_voice_idx]
+            if other_voice.get_pitch_change_position() != state.current_position:
+                continue
 
-      if (this_curr.pitch - other_prev.pitch) % 12 != 0:
-        continue
+            other_change = other_voice.get_pitch_change()
+            if other_change is None:
+                continue
 
-      constraints.append((pitch - other_curr.pitch) % 12 == 0)
+            other_prev, other_curr = other_change
 
-    return Or(constraints) if constraints else False
+            if (this_curr.pitch - other_prev.pitch) % 12 != 0:
+                continue
 
-  def simultaneous_dissonance(
-    self,
-    state: REMIState,
-    pitch_domain: TokenRange,
-    pitch: z3.z3.ArithRef
-  ) -> z3.z3.BoolRef:
-    current_voice = state.pending_program
-    assert current_voice is not None, f"solver invoked with no pending program"
+            constraints.append((pitch - other_curr.pitch) % 12 == 0)
 
-    constraints = []
-    sounding = [
-      state.voices[idx].current_note.pitch for idx in range(state.max_nb_voices)
-      if idx != current_voice and \
-         state.voices[idx].is_sounding_at(state.current_position)]
+        return Or(constraints) if constraints else False
 
-    lowest_pitch = min(sounding) if sounding else None
-    if lowest_pitch is not None:
-      constraints.append(
-        And(pitch > lowest_pitch, (pitch - lowest_pitch) % 12 == 5)
-      )
+    def simultaneous_dissonance(
+        self,
+        state: REMIState,
+        pitch_domain: TokenRange,
+        pitch: z3.z3.ArithRef) -> z3.z3.BoolRef:
+    
+        current_voice = state.pending_program
+        assert current_voice is not None, f"solver invoked with no pending program"
+    
+        constraints = []
+        sounding = [
+            state.voices[idx].current_note.pitch for idx in range(state.max_nb_voices)
+            if idx != current_voice and \
+               state.voices[idx].is_sounding_at(state.current_position)]
+    
+        # lowest_pitch = min(sounding) if sounding else None
+        # if lowest_pitch is not None:
+        #   constraints.append(
+        #     And(pitch > lowest_pitch, (pitch - lowest_pitch) % 12 == 5)
+        #   )
+    
+    
+        for other_voice_idx in range(state.max_nb_voices):
+            if other_voice_idx == current_voice:
+                continue
+    
+            other_voice = state.voices[other_voice_idx]
+            if other_voice.get_pitch_change_position() != state.current_position:
+                continue
+    
+            other_change = other_voice.get_pitch_change()
+            if other_change is None:
+                continue
+    
+            _, other_curr = other_change
+            interval = Abs(pitch - other_curr.pitch) % 12
+            for dissonance in (1,2,6,10,11):
+                constraints.append(interval == dissonance)
+    
+            #if lowest_pitch is not None:
+            #  constraints.append(And(pitch <= lowest_pitch, (other_curr.pitch - pitch) % 12 == 5))
+            #  # constraints.append(And(other_curr.pitch <= lowest_pitch, (pitch - other_curr.pitch) % 12 == 5))
+    
+        return Or(constraints) if constraints else False
+    
+    
+    def solve_pitch_constraints(
+        self,
+        state: REMIState,
+        pitch_token_domain: TokenRange
+        ) -> TokenSet:
+        """Returns a set of pitch tokens that violate pitch constraints"""
+        pitch = Int('pitch')
+        pitch_domain = TokenRange(
+            int(self.id_to_name[pitch_token_domain.start].replace('Pitch_','')),
+            int(self.id_to_name[pitch_token_domain.end-1].replace('Pitch_','')),
+            'Pitch')
+    
+        solver = Solver()
+        solver.add(And(
+            pitch_domain.start <= pitch, pitch < pitch_domain.end))
+        solver.add(Or(
+            self.parallel_fifth(state, pitch_domain, pitch),
+            self.parallel_octave(state, pitch_domain, pitch),
+            self.simultaneous_dissonance(state, pitch_domain, pitch)
+        ))
+    
+        forbidden_pitches = []
+        while solver.check() == sat:
+            model = solver.model()
+            value = model[pitch].as_long()
+            forbidden_pitches.append(value)
+            solver.add(pitch != value)
+    
+        return TokenSet({self.name_to_id[f'Pitch_{x}'] for x in forbidden_pitches} , 'Pitch')
 
+    def is_parallel_fifth(self, state: REMIState, pitch_domain: TokenRange, pitch_value: int) -> bool:
+        """Check if a specific pitch value creates a parallel fifth"""
 
-    for other_voice_idx in range(state.max_nb_voices):
-      if other_voice_idx == current_voice:
-        continue
-
-      other_voice = state.voices[other_voice_idx]
-      if other_voice.get_pitch_change_position() != state.current_position:
-        continue
-
-      other_change = other_voice.get_pitch_change()
-      if other_change is None:
-        continue
-
-      _, other_curr = other_change
-      interval = Abs(pitch - other_curr.pitch) % 12
-      for dissonance in (1,2,6,10,11):
-        constraints.append(interval == dissonance)
-
-      if lowest_pitch is not None:
-        constraints.append(And(pitch <= lowest_pitch, (other_curr.pitch - pitch) % 12 == 5))
-        # constraints.append(And(other_curr.pitch <= lowest_pitch, (pitch - other_curr.pitch) % 12 == 5))
-
-    return Or(constraints) if constraints else False
-
-
-
-
-  def solve_pitch_constraints(
-    self,
-    state: REMIState,
-    pitch_token_domain: TokenRange
-  ) -> TokenSet:
-    pitch = Int('pitch')
-    pitch_domain = TokenRange(
-        int(self.id_to_name[pitch_token_domain.start].replace('Pitch_','')),
-        int(self.id_to_name[pitch_token_domain.end-1].replace('Pitch_','')),
-        'Pitch'
-    )
-
-    solver = Solver()
-    solver.add(And(
-        pitch_domain.start <= pitch, pitch < pitch_domain.end))
-    solver.add(Or(
-        self.parallel_fifth(state, pitch_domain, pitch),
-        self.parallel_octave(state, pitch_domain, pitch),
-        self.simultaneous_dissonance(state, pitch_domain, pitch)
-    ))
-
-    forbidden_pitches = []
-    while solver.check() == sat:
-      model = solver.model()
-      value = model[pitch].as_long()
-      forbidden_pitches.append(value)
-      solver.add(pitch != value)
-
-    return TokenSet({self.name_to_id[f'Pitch_{x}'] for x in forbidden_pitches} , 'Pitch')
+        pitch = Int('pitch')  
+        solver = Solver()
+        solver.add(pitch == pitch_value)
+        solver.add(self.parallel_fifth(state, pitch_domain, pitch)) 
+        return solver.check() == sat
+    
+    def is_parallel_octave(self, state: REMIState, pitch_domain: TokenRange, pitch_value: int) -> bool:
+        """Check if a specific pitch value creates a parallel octave"""
+        pitch = Int('pitch')
+        solver = Solver()
+        solver.add(pitch == pitch_value)
+        solver.add(self.parallel_octave(state, pitch_domain, pitch))
+        return solver.check() == sat
+        
+    def is_simultaneous_dissonance(self, state: REMIState, pitch_domain: TokenRange, pitch_value: int) -> bool:
+        """Check if a specific pitch value creates a dissonance"""
+        pitch = Int('pitch')
+        solver = Solver()
+        solver.add(pitch == pitch_value)
+        solver.add(self.simultaneous_dissonance(state, pitch_domain, pitch))
+        return solver.check() == sat

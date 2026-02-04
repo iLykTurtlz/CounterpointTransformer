@@ -5,7 +5,7 @@ import os
 from .neural_model import PolyphonyTransformer
 from .symbolic_model import REMIConstraints, CounterpointSolver
 from .tokenizer import RemiPlusTokenizer
-
+from tqdm.auto import tqdm
 
 class NeurosymbolicModel:
     def __init__(
@@ -96,7 +96,7 @@ class NeurosymbolicModel:
 
         generated = start_tokens.clone()
         start_len = start_tokens.size(1)
-        for _ in range(max_length - start_len):
+        for _ in tqdm(range(max_length - start_len)):
             logits = self.neural_model(generated)[:, -1, :] / temperature
             logits = self.mask_logits(state, logits)
             if top_k is not None:

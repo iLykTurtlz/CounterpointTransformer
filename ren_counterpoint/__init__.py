@@ -7,7 +7,9 @@ from .trainer import Trainer
 from .inference import load_neurosymbolic_model, generate_sequence
 from .preprocessing import collect_midi_paths, verify_all_files, print_report, debug_single_file, diagnose_file 
 from .data_augmentation import transpose_midi, augment_midi_file, process_directory_parallel
+from .validation import count_violations
 from .utils import verify_all_files
+
 
 __all__ = [
     'PolyphonyTransformer',
@@ -19,5 +21,6 @@ __all__ = [
     'load_neurosymbolic_model', 'generate_sequence',
     'collect_midi_paths', 'verify_all_files', 'print_report', 'debug_single_file', 'diagnose_file',
     'transpose_midi', 'augment_midi_file', 'process_directory_parallel',
+    'count_violations',
     'verify_all_files',
 ]
