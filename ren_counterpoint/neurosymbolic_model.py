@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 from .neural_model import PolyphonyTransformer
-from .symbolic_model import REMIConstraints, CounterpointSolver
+from .symbolic_model import REMIConstraints, CounterpointSolver, REMIState
 from .tokenizer import RemiPlusTokenizer
 from tqdm.auto import tqdm
 
