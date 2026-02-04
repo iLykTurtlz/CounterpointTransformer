@@ -32,6 +32,10 @@ class VoiceState:
         if self.current_note is not None and \
            self.current_note.end_position == position:
             self.previous_note = self.current_note
+        elif self.current_note is None and \
+             self.previous_note is not None and \
+             self.previous_note.end_position == position:
+            pass
         else:
             self.previous_note = None
 
