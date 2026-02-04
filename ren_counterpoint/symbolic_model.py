@@ -517,8 +517,8 @@ class CounterpointSolver:
         current_voice = state.pending_program
         assert current_voice is not None, f"solver invoked with no pending program"
 
-        this_curr = state.voices[current_voice].current_note
-        if this_curr is None:
+        this_prev = state.voices[current_voice].previous_note
+        if this_prev is None:
             return False
 
         constraints = []
@@ -538,9 +538,9 @@ class CounterpointSolver:
             if other_prev == other_curr:
                 continue
 
-            if (this_curr.pitch - other_prev.pitch) % 12 == 7:
+            if (this_prev.pitch - other_prev.pitch) % 12 == 7:
                 constraints.append((pitch - other_curr.pitch) % 12 == 7)
-            elif (other_prev.pitch - this_curr.pitch) % 12 == 7:
+            elif (other_prev.pitch - this_prev.pitch) % 12 == 7:
                 constraints.append((other_curr.pitch - pitch) % 12 == 7)
 
         return Or(constraints) if constraints else False
@@ -555,8 +555,8 @@ class CounterpointSolver:
         current_voice = state.pending_program
         assert current_voice is not None, f"solver invoked with no pending program"
 
-        this_curr = state.voices[current_voice].current_note
-        if this_curr is None:
+        this_prev = state.voices[current_voice].previous_note
+        if this_prev is None:
             return False
 
         constraints = []
@@ -576,7 +576,7 @@ class CounterpointSolver:
             if other_prev == other_curr:
                 continue
 
-            if (this_curr.pitch - other_prev.pitch) % 12 != 0:
+            if (this_prev.pitch - other_prev.pitch) % 12 != 0:
                 continue
 
             constraints.append((pitch - other_curr.pitch) % 12 == 0)
@@ -619,7 +619,7 @@ class CounterpointSolver:
     
             _, other_curr = other_change
             interval = Abs(pitch - other_curr.pitch) % 12
-            for dissonance in (1,2,6,10,11):
+            for dissonance in (1,2,10,11):
                 constraints.append(interval == dissonance)
     
             #if lowest_pitch is not None:
