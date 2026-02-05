@@ -59,8 +59,8 @@ def generate_sequence(
     # Note: We do NOT call model.to(device) here because NeurosymbolicModel
     # is a wrapper, not an nn.Module. The internal model should already be
     # on the correct device from the loading step.
-
-    print(f"\nGenerating with NeurosymbolicModel:")
+    class_name = model.__class__.__name__
+    print(f"\nGenerating with {class_name}")
     print(f"  Max length: {max_length}")
     print(f"  Temperature: {temperature}")
     print(f"  Top-k: {top_k}")
