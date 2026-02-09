@@ -647,7 +647,7 @@ class CounterpointSolver:
         solver.add(Or(
             self.parallel_fifth(state, pitch_domain, pitch),
             self.parallel_octave(state, pitch_domain, pitch),
-            self.simultaneous_dissonance(state, pitch_domain, pitch)
+            # self.simultaneous_dissonance(state, pitch_domain, pitch)
         ))
     
         forbidden_pitches = []
