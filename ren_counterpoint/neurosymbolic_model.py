@@ -28,19 +28,20 @@ class NeurosymbolicModel:
     def get_domains(self, state):
         """Invoke the BNF and Z3 models to get valid token domains"""
         domains = self.bnf_constrainer.get_valid_domains(state)
-        pitch_domain = None
-        idx = None
-        for i,domain in enumerate(domains):
-            if domain.name == 'Pitch':
-                pitch_domain = domain
-                idx = i 
-                assert all(d.name != 'Pitch' for d in domains[(i+1):])
-                break
-        if pitch_domain is not None:
-            forbidden = self.counterpoint_solver.solve_pitch_constraints(state, pitch_domain)
-            domains[idx] = TokenSet(
-                {tok for tok in range(pitch_domain.start, pitch_domain.end) if tok not in forbidden},
-                'Pitch')
+        if self.use_counterpoint_solver:
+            pitch_domain = None
+            idx = None
+            for i,domain in enumerate(domains):
+                if domain.name == 'Pitch':
+                    pitch_domain = domain
+                    idx = i 
+                    assert all(d.name != 'Pitch' for d in domains[(i+1):])
+                    break
+            if pitch_domain is not None:
+                forbidden = self.counterpoint_solver.solve_pitch_constraints(state, pitch_domain)
+                domains[idx] = TokenSet(
+                    {tok for tok in range(pitch_domain.start, pitch_domain.end) if tok not in forbidden},
+                    'Pitch')
         return domains
 
     def get_invalid_mask(self, state, device) -> torch.Tensor:

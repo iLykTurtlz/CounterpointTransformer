@@ -517,7 +517,9 @@ class CounterpointSolver:
         current_voice = state.pending_program
         assert current_voice is not None, f"solver invoked with no pending program"
 
-        this_prev = state.voices[current_voice].previous_note
+        # this_prev = state.voices[current_voice].previous_note
+        this_prev = state.voices[current_voice].current_note
+
         if this_prev is None:
             return False
 
@@ -555,7 +557,9 @@ class CounterpointSolver:
         current_voice = state.pending_program
         assert current_voice is not None, f"solver invoked with no pending program"
 
-        this_prev = state.voices[current_voice].previous_note
+        # this_prev = state.voices[current_voice].previous_note
+        this_prev = state.voices[current_voice].current_note
+        
         if this_prev is None:
             return False
 
