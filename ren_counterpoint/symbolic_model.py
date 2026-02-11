@@ -537,7 +537,7 @@ class CounterpointSolver:
                 continue
 
             other_prev, other_curr = other_change
-            if other_prev == other_curr:
+            if other_prev.pitch == other_curr.pitch:
                 continue
 
             if (this_prev.pitch - other_prev.pitch) % 12 == 7:
@@ -577,7 +577,7 @@ class CounterpointSolver:
                 continue
 
             other_prev, other_curr = other_change
-            if other_prev == other_curr:
+            if other_prev.pitch == other_curr.pitch:
                 continue
 
             if (this_prev.pitch - other_prev.pitch) % 12 != 0:
