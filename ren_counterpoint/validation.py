@@ -88,9 +88,8 @@ def count_violations(token_sequence: List[int], tokenizer) -> Dict[str, int]:
                 if counterpoint_solver.is_parallel_octave(state, pitch_domain, pitch_val):
                     violations['parallel_octave'] += 1
                 
-                # if counterpoint_solver.is_simultaneous_dissonance(state, pitch_domain, pitch_val):
-                #    violations['simultaneous_dissonance'] += 1
-        
+                if counterpoint_solver.is_simultaneous_dissonance(state, pitch_domain, pitch_val):
+                    violations['simultaneous_dissonance'] += 1 
         # Update state for next iteration
         state.update(token_id, token_name)
     
