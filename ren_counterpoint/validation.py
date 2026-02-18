@@ -33,7 +33,7 @@ def count_violations(token_sequence: List[int], tokenizer) -> Dict[str, int]:
         'voice_unavailable': 0,          # Voice already playing
         'parallel_fifth': 0,             # Parallel fifth motion
         'parallel_octave': 0,            # Parallel octave motion
-        # 'simultaneous_dissonance': 0,    # Dissonant simultaneity
+        'simultaneous_dissonance': 0,    # Dissonant simultaneity
         'invalid_token': 0,              # PAD or PitchDrum tokens
     }
     
